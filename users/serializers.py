@@ -58,3 +58,38 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data.get('password'))
         instance.save()
         return instance
+
+
+class ChangePasswordSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(max_length=150, write_only=True)
+    new_password = serializers.CharField(max_length=150, write_only=True)
+    new_password2 = serializers.CharField(max_length=150, write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('old_password', 'new_password', 'new_password2')
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+
+        return attrs
+
+    def validate_old_password(self, value):
+        instance = self._kwargs['instance']  # model object
+        user = self.context['request'].user
+        if user.id != instance.id:
+            raise serializers.ValidationError("You don't have permission for this user.")
+        if not self.context['request'].user.check_password(value):
+            raise serializers.ValidationError("old password is incorrect.")
+
+        return value
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        if user.id != instance.id:
+            raise serializers.ValidationError({"authorize": "You dont have permission for this user."})
+
+        instance.set_password(validated_data['new_password2'])
+        instance.save()
+        return instance
