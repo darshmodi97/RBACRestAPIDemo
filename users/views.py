@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.urls import reverse
-from rest_framework.generics import (ListCreateAPIView, RetrieveAPIView, ListAPIView)
+from rest_framework.generics import (ListCreateAPIView, RetrieveAPIView, ListAPIView, UpdateAPIView)
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from users.models import User
-from users.serializers import ProfileSerializer, UserSerializer
+from users.serializers import ProfileSerializer, UserSerializer, UpdateProfileSerializer
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -47,8 +47,42 @@ class ShowProfile(RetrieveAPIView):
 
 
     def get(self, request, *args, **kwargs):
-        serializer = self.serializer_class(instance=self.get_object())
+        serializer = self.serializer_class(instance=self.get_object(), context={'request': request})
         return Response(
             status=status.HTTP_200_OK,
             data=serializer.data
         )
+
+
+class UpdateProfileView(UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UpdateProfileSerializer
+    queryset = User.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        serializer = self.serializer_class(user)
+        return Response(
+            {
+                "success": "True",
+                "data": serializer.data,
+                "status": status.HTTP_200_OK
+            }
+        )
+
+    def put(self, request, *args, **kwargs):
+
+        user = User.objects.get(email=request.user)
+        serializer = self.serializer_class(instance=user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+
+        return Response(
+                {
+                    "success": "True",
+                    "message": "User updated successfully.",
+                    "data": serializer.data,
+                    "status": status.HTTP_200_OK
+                }
+            )
