@@ -1,13 +1,14 @@
+from django.db import IntegrityError
 from django.shortcuts import render
 from django.urls import reverse
-from rest_framework.generics import (ListCreateAPIView, RetrieveAPIView, ListAPIView, UpdateAPIView)
+from rest_framework.generics import (GenericAPIView, ListCreateAPIView, RetrieveAPIView, ListAPIView, UpdateAPIView)
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
-from users.models import User
+from users.models import BlackListedToken, User
 from users.serializers import ChangePasswordSerializer, ProfileSerializer, UserSerializer, UpdateProfileSerializer
 from rest_framework.response import Response
 from rest_framework import status
-
-
+from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken, BlacklistMixin
+from users.permissions import IsTokenValid
 # Create your views here.
 class UserListView(ListAPIView):
     """
@@ -44,7 +45,7 @@ class ShowProfile(RetrieveAPIView):
     """
     This API is for showing the user detail.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTokenValid]
     serializer_class = ProfileSerializer
     queryset = User.objects.all()
 
@@ -61,7 +62,7 @@ class UpdateProfileView(UpdateAPIView):
     """
     Enter token in header and you will get allowed to update the user's data who is currently logged in.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTokenValid]
     serializer_class = UpdateProfileSerializer
     queryset = User.objects.all()
 
@@ -100,7 +101,7 @@ class ChangePasswordView(UpdateAPIView):
     """
     This API is responsible for changing the password of user's account.
     """
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated, IsTokenValid]
     serializer_class = ChangePasswordSerializer
     queryset = User.objects.all()
 
@@ -114,3 +115,27 @@ class ChangePasswordView(UpdateAPIView):
             "status": status.HTTP_200_OK,
             "message": f"Password changed successfully for user {request.user.email}"
         })
+
+
+class LogoutView(GenericAPIView):
+    """
+    This class is responsible for blacklisting token and logout the user.
+    """
+    permission_classes = [IsAuthenticated, IsTokenValid]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            BlackListedToken.objects.create(user=request.user, jti_token=request.auth.get("jti"))
+        except IntegrityError:
+            return Response({
+                "success": False,
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": "User can't logout."
+            })
+
+        return Response(
+            {
+                "success": True,
+                "status": status.HTTP_200_OK,
+                "message": "User logged out successfully."}
+        )
