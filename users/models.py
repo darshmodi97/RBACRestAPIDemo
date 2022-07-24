@@ -57,7 +57,7 @@ class User(AbstractUser):
 
 class BlackListedToken(models.Model):
     jti_token = models.CharField(max_length=500)
-    user = models.ForeignKey(User, related_name="token_user", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="token_user", on_delete=models.CASCADE, blank=True, null=True)
     timestamp = models.DateTimeField(auto_now=True)
 
     class Meta:

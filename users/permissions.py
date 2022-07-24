@@ -19,7 +19,7 @@ class IsTokenValid(BasePermission):
         else:
             return False
         try:
-            is_blackListed = BlackListedToken.objects.get(user=user_id, jti_token=jti)
+            is_blackListed = BlackListedToken.objects.get(user_id=user_id, jti_token=jti)
             if is_blackListed:
                 is_allowed_user = False
         except BlackListedToken.DoesNotExist:
