@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'django_rest_passwordreset',
+    'drf_yasg',
     'users',
 ]
 
@@ -49,6 +50,24 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        "api_key": {
+        "type": "apiKey",
+        "name": "AUTHORIZATION",
+        "in": "header",
+        "description": "Write Bearer before entering JWT token."
+        },
+    },
+
+    'USE_SESSION_AUTH': False,
+
+}
+
+REDOC_SETTINGS = {
+   'LAZY_RENDERING': False,
 }
 
 SIMPLE_JWT = {
