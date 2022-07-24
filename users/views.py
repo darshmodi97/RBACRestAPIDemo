@@ -46,7 +46,7 @@ class SignUpView(ListCreateAPIView):
 
 class ShowProfile(RetrieveAPIView):
     """
-    This API is for showing the user detail.
+    This API is for showing the user details.
     """
     permission_classes = [IsAuthenticated, IsTokenValid]
     serializer_class = ProfileSerializer
@@ -122,8 +122,8 @@ class ChangePasswordView(UpdateAPIView):
         return Response({
             "success": True,
             "status": status.HTTP_200_OK,
-            "message": f"Password changed successfully for user \
-                        {request.user.email}"
+            "message": "Password changed successfully for user "
+                        f"{request.user.email}"
         })
 
 
