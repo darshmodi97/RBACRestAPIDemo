@@ -156,7 +156,7 @@ class LogoutView(GenericAPIView):
 class DeleteView(APIView):
     """
     This class is responsible for user deletion and only admin can delete the
-    users.
+    users. We are soft deleting users.
     """
     permission_classes = [IsAdminUser, IsTokenValid]
 
@@ -164,7 +164,8 @@ class DeleteView(APIView):
 
         try:
             user = User.objects.get(pk=kwargs.get('pk'))
-            user.delete()
+            user.is_active = False
+            user.save()
             return Response(
                 {
                     "success": "True",
