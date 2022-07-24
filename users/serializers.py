@@ -18,6 +18,9 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         }
 
     def create(self, validated_data):
+        """
+        Creating users as per role.
+        """
         role = validated_data.get('role', "Solution Seeker")
         if role == "Admin":
             return User.objects.create_superuser(**validated_data)
@@ -37,7 +40,9 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
         fields = ('first_name', 'last_name', 'email', 'role')
 
     def update(self, instance, validated_data):
-
+        """
+        Updating an User profile details.
+        """
 
         instance.email = validated_data.get('email') if validated_data.get('email') != '' else instance.email
 
@@ -70,12 +75,18 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         fields = ('old_password', 'new_password', 'new_password2')
 
     def validate(self, attrs):
+        """
+        Validating both passwords.
+        """
         if attrs['new_password'] != attrs['new_password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
 
         return attrs
 
     def validate_old_password(self, value):
+        """
+        Validating old password before change.
+        """
         instance = self._kwargs['instance']  # model object
         user = self.context['request'].user
         if user.id != instance.id:
@@ -86,6 +97,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
+        """
+        Updating password.
+        """
         user = self.context['request'].user
         if user.id != instance.id:
             raise serializers.ValidationError({"authorize": "You dont have permission for this user."})

@@ -1,15 +1,18 @@
 from django.db import IntegrityError
 from django.shortcuts import render
 from django.urls import reverse
-from rest_framework.generics import (GenericAPIView, ListCreateAPIView, RetrieveAPIView, ListAPIView, UpdateAPIView)
+from rest_framework.generics import (GenericAPIView, ListCreateAPIView, 
+                                RetrieveAPIView, ListAPIView, UpdateAPIView)
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from users.models import BlackListedToken, User
-from users.serializers import ChangePasswordSerializer, ProfileSerializer, UserSerializer, UpdateProfileSerializer
+from users.serializers import ChangePasswordSerializer, ProfileSerializer, \
+                                        UserSerializer, UpdateProfileSerializer
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken, BlacklistMixin
 from users.permissions import IsTokenValid
-# Create your views here.
+from rest_framework.views import APIView
+
+
 class UserListView(ListAPIView):
     """
     This API will show users list.
@@ -43,7 +46,7 @@ class SignUpView(ListCreateAPIView):
 
 class ShowProfile(RetrieveAPIView):
     """
-    This API is for showing the user detail.
+    This API is for showing the user details.
     """
     permission_classes = [IsAuthenticated, IsTokenValid]
     serializer_class = ProfileSerializer
@@ -51,7 +54,9 @@ class ShowProfile(RetrieveAPIView):
 
 
     def get(self, request, *args, **kwargs):
-        serializer = self.serializer_class(instance=self.get_object(), context={'request': request})
+        serializer = self.serializer_class(instance=self.get_object(),
+                                             context={'request': request}
+                                            )
         return Response(
             status=status.HTTP_200_OK,
             data=serializer.data
@@ -60,7 +65,8 @@ class ShowProfile(RetrieveAPIView):
 
 class UpdateProfileView(UpdateAPIView):
     """
-    Enter token in header and you will get allowed to update the user's data who is currently logged in.
+    Enter token in header and you will get allowed to update the user's data
+    who is currently logged in.
     """
     permission_classes = [IsAuthenticated, IsTokenValid]
     serializer_class = UpdateProfileSerializer
@@ -106,14 +112,18 @@ class ChangePasswordView(UpdateAPIView):
     queryset = User.objects.all()
 
     def put(self, request, *args, **kwargs):
-        serializer = self.serializer_class(instance=request.user, data=request.data, context={'request':request})
+        serializer = self.serializer_class(instance=request.user,
+                                            data=request.data,
+                                            context={'request':request}
+                                        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response({
             "success": True,
             "status": status.HTTP_200_OK,
-            "message": f"Password changed successfully for user {request.user.email}"
+            "message": "Password changed successfully for user "
+                        f"{request.user.email}"
         })
 
 
@@ -125,7 +135,9 @@ class LogoutView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            BlackListedToken.objects.create(user=request.user, jti_token=request.auth.get("jti"))
+            BlackListedToken.objects.create(user=request.user, 
+                                            jti_token=request.auth.get("jti")
+                                            )
         except IntegrityError:
             return Response({
                 "success": False,
@@ -139,3 +151,33 @@ class LogoutView(GenericAPIView):
                 "status": status.HTTP_200_OK,
                 "message": "User logged out successfully."}
         )
+
+
+class DeleteView(APIView):
+    """
+    This class is responsible for user deletion and only admin can delete the
+    users. We are soft deleting users.
+    """
+    permission_classes = [IsAdminUser, IsTokenValid]
+
+    def delete(self, request, *args, **kwargs):
+
+        try:
+            user = User.objects.get(pk=kwargs.get('pk'))
+            user.is_active = False
+            user.save()
+            return Response(
+                {
+                    "success": "True",
+                    "status": status.HTTP_204_NO_CONTENT,
+                    "message": "User deleted successfully."
+                }
+            )
+        except User.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data={
+                    "success": "False",
+                    "message": f"User with id {kwargs.get('pk')} doesn't exist."
+                }
+            )
